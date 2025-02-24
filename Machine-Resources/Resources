@@ -1,0 +1,39 @@
+#!/bin/bash
+
+echo "Fetching Hack The Box machine page..."
+curl -s "https://www.hackthebox.com/machines" -A "Mozilla/5.0" > debug_full_page.html
+
+# Extract the relevant section while skipping #not-found
+awk '/id="machines"/ {flag=1; next} /id="not-found"/ {next} flag' debug_full_page.html > debug_machine_section.html
+
+# Debugging logs
+echo "Saved full page content to debug_full_page.html"
+echo "Saved extracted machine section to debug_machine_section.html"
+
+# Extract machine names, links, and image URLs
+MACHINE_NAMES=($(grep -oP '(?<=alt=")[^"]+' debug_machine_section.html))
+MACHINE_ABOUT_LINKS=($(grep -oP '(?<=href=")https://www.hackthebox.com/machines/[^"]+' debug_machine_section.html))
+MACHINE_LINKS=($(echo "${MACHINE_ABOUT_LINKS[@]}" | sed 's|www|app|g'))  # Convert to app.hackthebox.com
+IMAGE_LINKS=($(grep -oP '(?<=src=")https://labs.hackthebox.com/storage/avatars/[^"]+' debug_machine_section.html))
+
+# Check extracted counts
+echo -e "\nExtracted ${#MACHINE_NAMES[@]} machine names, ${#MACHINE_ABOUT_LINKS[@]} machine about links, ${#MACHINE_LINKS[@]} machine links, and ${#IMAGE_LINKS[@]} images.\n"
+
+# Define output file
+OUTPUT_FILE="htb_machines.txt"
+
+# Write header to file
+echo -e "Machine Name | Machine About URL | Machine URL | Machine Image URL" > "$OUTPUT_FILE"
+echo -e "------------|-------------------|------------|-------------------" >> "$OUTPUT_FILE"
+
+# Loop through extracted data and append to file
+for i in "${!MACHINE_NAMES[@]}"; do
+    echo -e "${MACHINE_NAMES[$i]} | ${MACHINE_ABOUT_LINKS[$i]} | ${MACHINE_LINKS[$i]} | ${IMAGE_LINKS[$i]}" >> "$OUTPUT_FILE"
+done
+
+echo "Saved extracted machine details to $OUTPUT_FILE"
+
+# Remove temporary files
+rm -f debug_full_page.html debug_machine_section.html
+
+echo "Cleanup completed. Temporary files removed."
