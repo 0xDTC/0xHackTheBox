@@ -25,6 +25,9 @@ OUTPUT_FILE="htb_machines.txt"
 echo -e "Machine Name | Machine About URL | Machine URL | Machine Image URL" > "$OUTPUT_FILE"
 echo -e "------------|-------------------|------------|-------------------" >> "$OUTPUT_FILE"
 
+# Create a directory for images
+mkdir -p htb_machine_images
+
 # Loop through extracted machine about pages to fetch machine names
 for i in "${!MACHINE_ABOUT_LINKS[@]}"; do
     ABOUT_PAGE="${MACHINE_ABOUT_LINKS[$i]}"
@@ -41,6 +44,9 @@ for i in "${!MACHINE_ABOUT_LINKS[@]}"; do
         MACHINE_NAME=$(basename "$ABOUT_PAGE")
     fi
 
+    # Store the machine name in an array for later renaming
+    MACHINE_NAMES[$i]="$MACHINE_NAME"
+
     # Append extracted details to the file
     echo -e "${MACHINE_NAME} | ${MACHINE_ABOUT_LINKS[$i]} | ${MACHINE_LINKS[$i]} | ${IMAGE_LINKS[$i]}" >> "$OUTPUT_FILE"
 
@@ -49,6 +55,27 @@ for i in "${!MACHINE_ABOUT_LINKS[@]}"; do
 done
 
 echo "Saved extracted machine details to $OUTPUT_FILE"
+
+# Download images 20 at a time
+echo "Downloading machine images..."
+for ((j = 0; j < ${#IMAGE_LINKS[@]}; j += 20)); do
+    BATCH=("${IMAGE_LINKS[@]:j:20}")
+    
+    for k in "${!BATCH[@]}"; do
+        INDEX=$((j + k))
+        IMAGE_URL="${BATCH[$k]}"
+        MACHINE_NAME="${MACHINE_NAMES[$INDEX]}"
+        
+        # Download and rename image
+        wget -q "$IMAGE_URL" -O "htb_machine_images/${MACHINE_NAME}.png" &
+    done
+
+    wait  # Wait for all 20 downloads to complete
+    echo "Downloaded 20 images, waiting for 10 seconds..."
+    sleep 10
+done
+
+echo "All images downloaded and renamed."
 
 # Remove temporary files
 rm -f debug_full_page.html debug_machine_section.html
