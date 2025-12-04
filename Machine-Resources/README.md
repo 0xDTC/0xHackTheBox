@@ -30,13 +30,13 @@ cd 0xHackTheBox/Machine-Resources
 
 Make the script executable:
 ```sh
-chmod +x resources
+chmod +x Resources
 ```
 
 ## Usage
 Run the script:
 ```sh
-./resources
+./Resources
 ```
 The script will:
 1. Fetch the Hack The Box machine page.
@@ -48,7 +48,7 @@ The script will:
   ```
   Machine Name | Machine About URL | Machine URL | Machine Image URL
   ------------|-------------------|------------|-------------------
-  Lame    | https://www.hackthebox.com/machines/Lame | https://app.hackthebox.com/machines/Lame | https://labs.hackthebox.com/storage/avatars/000000xxxxx.png
+  Lame    | https://www.hackthebox.com/machines/Lame | https://app.hackthebox.com/machines/Lame | https://htb-mp-prod-public-storage.s3.eu-central-1.amazonaws.com/avatars/000000xxxxx.png
   ```
 - `htb_machine_images/` : Directory containing machine images named after the respective machine.
 
