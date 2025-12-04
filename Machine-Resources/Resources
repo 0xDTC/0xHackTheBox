@@ -13,7 +13,7 @@ echo "Saved extracted machine section to debug_machine_section.html"
 # Extract machine about links (unique machine URLs)
 MACHINE_ABOUT_LINKS=($(grep -oP '(?<=href=")https://www.hackthebox.com/machines/[^"]+' debug_machine_section.html))
 MACHINE_LINKS=($(echo "${MACHINE_ABOUT_LINKS[@]}" | sed 's|www|app|g'))  # Convert to app.hackthebox.com
-IMAGE_LINKS=($(grep -oP '(?<=src=")https://labs.hackthebox.com/storage/avatars/[^"]+' debug_machine_section.html))
+IMAGE_LINKS=($(grep -oP '(?<=src=")https://htb-mp-prod-public-storage\.s3\.eu-central-1\.amazonaws\.com/avatars/[^"]+' debug_machine_section.html))
 
 # Check extracted counts
 echo -e "\nExtracted ${#MACHINE_ABOUT_LINKS[@]} machine about links, ${#MACHINE_LINKS[@]} machine links, and ${#IMAGE_LINKS[@]} images.\n"
@@ -58,22 +58,37 @@ echo "Saved extracted machine details to $OUTPUT_FILE"
 
 # Download images 20 at a time
 echo "Downloading machine images..."
+DOWNLOADED_COUNT=0
+SKIPPED_COUNT=0
+
 for ((j = 0; j < ${#IMAGE_LINKS[@]}; j += 20)); do
     BATCH=("${IMAGE_LINKS[@]:j:20}")
-    
+    BATCH_DOWNLOAD_COUNT=0
+
     for k in "${!BATCH[@]}"; do
         INDEX=$((j + k))
         IMAGE_URL="${BATCH[$k]}"
         MACHINE_NAME="${MACHINE_NAMES[$INDEX]}"
-        
-        # Download and rename image
-        wget -q "$IMAGE_URL" -O "htb_machine_images/${MACHINE_NAME}.png" &
+
+        # Download and rename image only if it doesn't exist
+        if [[ ! -f "htb_machine_images/${MACHINE_NAME}.png" ]]; then
+            wget -q "$IMAGE_URL" -O "htb_machine_images/${MACHINE_NAME}.png" &
+            ((BATCH_DOWNLOAD_COUNT++))
+            ((DOWNLOADED_COUNT++))
+        else
+            ((SKIPPED_COUNT++))
+        fi
     done
 
-    wait  # Wait for all 20 downloads to complete
-    echo "Downloaded 20 images, waiting for 10 seconds..."
-    sleep 10
+    # Only wait and sleep if we actually downloaded something
+    if [[ $BATCH_DOWNLOAD_COUNT -gt 0 ]]; then
+        wait  # Wait for all downloads to complete
+        echo "Downloaded $BATCH_DOWNLOAD_COUNT images in this batch (Total: $DOWNLOADED_COUNT downloaded, $SKIPPED_COUNT skipped), waiting for 10 seconds..."
+        sleep 10
+    fi
 done
+
+echo "Download complete! Downloaded: $DOWNLOADED_COUNT, Skipped: $SKIPPED_COUNT"
 
 echo "All images downloaded and renamed."
 
